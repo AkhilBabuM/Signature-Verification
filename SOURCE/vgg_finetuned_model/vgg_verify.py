@@ -34,36 +34,11 @@ def cosine_similarity_fn(anchor_image_feature, test_image_feature):
 
 
 def verify(anchor_image, gan_op):
-    # loads the model and removes the last layer is removed
-    #vgg_model = tf.keras.models.load_model('saved_model.pb') #Depracated in keras3 ValueError: File format not supported: filepath=saved_model.pb. Keras 3 only supports V3 `.keras` files and legacy H5 format files (`.h5` extension). Note that the legacy SavedModel format is not supported by `load_model()` in Keras 3. In order to reload a TensorFlow SavedModel as an inference-only layer in Keras 3, use `keras.layers.TFSMLayer(saved_model.pb, call_endpoint='serving_default')` (note that your `call_endpoint` might have a different name).
-    #vgg_model = tf.keras.models.load_model(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/SavedModel")
-    #vgg_model = tf.keras.layers.TFSMLayer(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/SavedModel", call_endpoint='serving_default') #Source https://keras.io/api/layers/backend_specific_layers/tfsm_layer/
-    #vgg_model = tf.keras.models.load_model(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/SavedModel")
-    #vgg_model = tf.saved_model.load(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/SavedModel")
-    #feature_extractor.compile(loss='categorical_crossentropy', optimizer=optimizers.Adam(lr=1e-4),
-    #          metrics=['accuracy'])
-    #feature_extractor = tf.keras.Sequential(vgg_model.layers[:-1])
 
-
-
-    # # WORKING MODELS
-    # feature_extractor = tf.keras.models.load_model(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/bbox_regression_cnn.h5")
-    # ####### feature_extractor = tf.keras.models.load_model(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/kerasVggSigFeatures.h5", compile=False)
-    
-    # feature_extractor = tf.keras.models.load_model(r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/kerasVggSigFeatures.h5", compile=False)
-
-    # Load the model without compilation
     feature_extractor = tf.keras.models.load_model(
         r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/bbox_regression_cnn.h5",
         compile=False
     )
-
-    # # Load the model without compilation
-    # feature_extractor = tf.keras.models.load_model(
-    #     r"/Users/akhilbabu/Documents/work/Signature-Verification/SOURCE/vgg_finetuned_model/kerasVggSigFeatures.h5",
-    #     compile=False
-    # )
-
 
     # Compile the model with a default optimizer for inference, if needed
     feature_extractor.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), 
@@ -71,13 +46,17 @@ def verify(anchor_image, gan_op):
                               metrics=['accuracy'])
     
     
-    
-    
     feature_set = []
     # anchor image is resized to 256x256 to match outputs from gan.
     make_square(anchor_image)
     anchor_image_feature = extract_features(feature_extractor, anchor_image)
-    test_images = [gan_op + image for image in os.listdir(gan_op) if image[2:6]=='fake']
+    # test_images = [gan_op + image for image in os.listdir(gan_op) if image[2:6]=='fake']
+        # Use os.path.join to construct file paths correctly
+    test_images = [
+        os.path.join(gan_op, image)
+        for image in os.listdir(gan_op)
+        if image[2:6] == 'fake'
+    ]
     for image in test_images:
         test_image_feature = extract_features(feature_extractor, image)
         cosine_similarity = cosine_similarity_fn(anchor_image_feature, test_image_feature)
