@@ -4,3 +4,4 @@ results
 *.h5
 *.pth
 *.pt
+.DS_Store

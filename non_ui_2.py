@@ -8,12 +8,11 @@ from tensorflow.keras.preprocessing import image as keras_image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import shutil
 
-
 # Import your custom modules
 from SOURCE.yolo_files import detect
 from SOURCE.gan_files import test
 from SOURCE.vgg_finetuned_model import vgg_verify
-from helper_fns import gan_utils, cv_utils
+from helper_fns import gan_utils
 
 # ==============================
 # Configuration Section
@@ -102,14 +101,13 @@ def detect_signature(document_image_path):
 
 def clean_signature(signature_image_path):
     """
-    Cleans the signature image using your GAN code and then extracts the signature
-    using grayscale thresholding.
+    Cleans the signature image using your GAN code.
 
     Args:
         signature_image_path (str): Path to the signature image to clean.
 
     Returns:
-        str: Path to the cleaned and processed signature image.
+        str: Path to the cleaned signature image.
     """
     # Prepare the input directory for the GAN
     gan_input_dir = GAN_INPUT_DIR
@@ -136,7 +134,7 @@ def clean_signature(signature_image_path):
     # The cleaned images are saved in GAN_OUTPUT_DIR
     gan_output_dir = GAN_OUTPUT_DIR
 
-    # Get the cleaned images
+    # Get the cleaned image
     cleaned_images = [
         os.path.join(gan_output_dir, f)
         for f in os.listdir(gan_output_dir)
@@ -147,18 +145,7 @@ def clean_signature(signature_image_path):
         print("No cleaned signature image found.")
         return None
 
-    # Process each cleaned image using extract_signature_gray
-    for image_path in cleaned_images:
-        # Apply the extract_signature_gray function
-        processed_image = cv_utils.high_contrast_clean(image_path)
-        if processed_image is not None:
-            # Save the processed image back to the same path, replacing the original
-            processed_image.save(image_path)
-            print(f"Processed and replaced image: {image_path}")
-        else:
-            print(f"Failed to process image: {image_path}")
-
-    # For simplicity, select the first processed image
+    # For simplicity, select the first cleaned image
     cleaned_signature_image_path = cleaned_images[0]
 
     return cleaned_signature_image_path
