@@ -104,7 +104,7 @@ def select_document():
     '''
     left, right = st.columns(2) # Create two columns
     # dropdown box in left column
-    selection = str(left.selectbox('Select document to run inference', [1, 2]))
+    selection = str(left.selectbox('Select document to run inference', [1, 2, 3]))
     # select corresponding document image from media/documents
     selection_image = MEDIA_ROOT+selection+'.png'
     #display image in right column.

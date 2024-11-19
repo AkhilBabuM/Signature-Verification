@@ -12,6 +12,32 @@ import shutil
 from SOURCE.yolo_files import detect
 from SOURCE.gan_files import test
 from SOURCE.vgg_finetuned_model import vgg_verify
+from helper_fns import gan_utils
+
+# ==============================
+# Configuration Section
+# ==============================
+
+# YOLO Configuration
+YOLO_RESULTS_DIR = 'results/yolov5'
+YOLO_EXP_PREFIX = 'exp'
+YOLO_CROPS_DIR_NAME = 'crops'
+YOLO_SIGNATURE_CLASS_NAME = 'DLSignature'
+
+# GAN Configuration
+GAN_INPUT_DIR = 'results/gan/gan_signdata_kaggle/gan_ips/testB'
+GAN_OUTPUT_DIR = 'results/gan/gan_signdata_kaggle/test_latest/images/'
+GAN_CLEANED_IMAGE_SUFFIX = 'fake'
+
+# VGG Model Configuration
+VGG_MODEL_PATH = 'SOURCE/vgg_finetuned_model/bbox_regression_cnn.h5'  # If needed in vgg_verify
+
+# Image Processing Configuration
+IMAGE_EXTENSIONS = ('.jpg', '.png')
+
+# ==============================
+# Main Script
+# ==============================
 
 def main(document_image_path, signature_image_path):
     # Step 1: Signature Detection using your custom YOLOv5 code
@@ -27,12 +53,12 @@ def main(document_image_path, signature_image_path):
         return None
 
     # Step 3: Signature Verification using your VGG model
-    similarity = verify_signature(cleaned_signature_image_path, signature_image_path)
-    if similarity is None:
+    verification_score = verify_signature(cleaned_signature_image_path, signature_image_path)
+    if verification_score is None:
         print("Signature verification failed.")
         return None
 
-    return similarity
+    return verification_score
 
 def detect_signature(document_image_path):
     """
@@ -42,19 +68,27 @@ def detect_signature(document_image_path):
         document_image_path (str): Path to the document image.
 
     Returns:
-        str: Path to the cropped signature image, or None if no signature detected.
+        str: Path to the cropped and resized signature image, or None if no signature detected.
     """
     # Call your custom detect function
     detect.detect(document_image_path)
 
-    # Assuming your detect function saves the cropped signatures in 'results/yolov5/exp/crops/DLSignature/'
-    # Adjust the paths based on your actual output directories
-    yolo_results_dir = 'results/yolov5'
-    latest_exp_dir = max([os.path.join(yolo_results_dir, d) for d in os.listdir(yolo_results_dir) if d.startswith('exp')], key=os.path.getmtime)
-    crops_dir = os.path.join(latest_exp_dir, 'crops', 'DLSignature')
+    # Get the latest YOLO detection directory
+    yolo_results_dir = YOLO_RESULTS_DIR
+    latest_exp_dir = max(
+        [os.path.join(yolo_results_dir, d) for d in os.listdir(yolo_results_dir) if d.startswith(YOLO_EXP_PREFIX)],
+        key=os.path.getmtime
+    )
+    crops_dir = os.path.join(latest_exp_dir, YOLO_CROPS_DIR_NAME, YOLO_SIGNATURE_CLASS_NAME)
 
-    # Get the list of cropped signature images
-    cropped_images = [os.path.join(crops_dir, f) for f in os.listdir(crops_dir) if f.endswith(('.jpg', '.png'))]
+    print("About to resize the images:")
+    # Resize images using gan_utils.resize_images
+    gan_utils.resize_images(crops_dir)
+
+    # Get the list of cropped and resized signature images
+    cropped_images = [
+        os.path.join(crops_dir, f) for f in os.listdir(crops_dir) if f.endswith(IMAGE_EXTENSIONS)
+    ]
 
     if not cropped_images:
         print("No signature detected.")
@@ -64,47 +98,6 @@ def detect_signature(document_image_path):
     detected_signature_image_path = cropped_images[0]
 
     return detected_signature_image_path
-
-# def clean_signature(signature_image_path):
-#     """
-#     Cleans the signature image using your GAN code.
-
-#     Args:
-#         signature_image_path (str): Path to the signature image to clean.
-
-#     Returns:
-#         str: Path to the cleaned signature image.
-#     """
-#     # Prepare the input directory for the GAN
-#     gan_input_dir = 'results/gan/gan_signdata_kaggle/gan_ips/testB'
-#     os.makedirs(gan_input_dir, exist_ok=True)
-
-#     # Clear any existing images in the GAN input directory
-#     for f in os.listdir(gan_input_dir):
-#         os.remove(os.path.join(gan_input_dir, f))
-
-#     # Copy the signature image to the GAN input directory
-#     shutil.copy(signature_image_path, gan_input_dir)
-
-#     # Run the GAN cleaning process
-#     test.clean()
-
-#     # The cleaned images are saved in 'results/gan/gan_signdata_kaggle/test_latest/images/'
-#     gan_output_dir = 'results/gan/gan_signdata_kaggle/test_latest/images/'
-
-#     # Get the cleaned image
-#     cleaned_images = [os.path.join(gan_output_dir, f) for f in os.listdir(gan_output_dir) if 'fake' in f]
-
-#     if not cleaned_images:
-#         print("No cleaned signature image found.")
-#         return None
-
-#     # For simplicity, select the first cleaned image
-#     cleaned_signature_image_path = cleaned_images[0]
-
-#     return cleaned_signature_image_path
-
-import sys
 
 def clean_signature(signature_image_path):
     """
@@ -117,7 +110,7 @@ def clean_signature(signature_image_path):
         str: Path to the cleaned signature image.
     """
     # Prepare the input directory for the GAN
-    gan_input_dir = 'results/gan/gan_signdata_kaggle/gan_ips/testB'
+    gan_input_dir = GAN_INPUT_DIR
     os.makedirs(gan_input_dir, exist_ok=True)
 
     # Clear any existing images in the GAN input directory
@@ -138,11 +131,15 @@ def clean_signature(signature_image_path):
     # Restore the original sys.argv
     sys.argv = original_argv
 
-    # The cleaned images are saved in 'results/gan/gan_signdata_kaggle/test_latest/images/'
-    gan_output_dir = 'results/gan/gan_signdata_kaggle/test_latest/images/'
+    # The cleaned images are saved in GAN_OUTPUT_DIR
+    gan_output_dir = GAN_OUTPUT_DIR
 
     # Get the cleaned image
-    cleaned_images = [os.path.join(gan_output_dir, f) for f in os.listdir(gan_output_dir) if 'fake' in f]
+    cleaned_images = [
+        os.path.join(gan_output_dir, f)
+        for f in os.listdir(gan_output_dir)
+        if GAN_CLEANED_IMAGE_SUFFIX in f
+    ]
 
     if not cleaned_images:
         print("No cleaned signature image found.")
@@ -152,6 +149,7 @@ def clean_signature(signature_image_path):
     cleaned_signature_image_path = cleaned_images[0]
 
     return cleaned_signature_image_path
+
 def verify_signature(cleaned_signature_image_path, signature_image_path):
     """
     Verifies the cleaned signature image against the provided signature image.
@@ -179,10 +177,10 @@ def verify_signature(cleaned_signature_image_path, signature_image_path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python signature_verification.py <document_image_path> <signature_image_path>")
+        print("Usage: python non_ui.py <document_image_path> <signature_image_path>")
         sys.exit(1)
     document_image_path = sys.argv[1]
     signature_image_path = sys.argv[2]
-    similarity = main(document_image_path, signature_image_path)
-    if similarity is not None:
-        print(f"Similarity: {similarity}")
+    verification_score = main(document_image_path, signature_image_path)
+    if verification_score is not None:
+        print(f"Verification Score: {verification_score}")

@@ -58,8 +58,12 @@ def verify(anchor_image, gan_op):
         if image[2:6] == 'fake'
     ]
     for image in test_images:
+        print(f"\n\n\n\nVerifying image {image} with anchor image {anchor_image}\n\n\n\n")
+
+    for image in test_images:
         test_image_feature = extract_features(feature_extractor, image)
         cosine_similarity = cosine_similarity_fn(anchor_image_feature, test_image_feature)
         cosine_similarity = round(cosine_similarity, 2)
         feature_set.append([image, cosine_similarity])
+
     return feature_set
