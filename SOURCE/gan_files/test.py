@@ -33,39 +33,111 @@ from SOURCE.gan_files.models import create_model
 from SOURCE.gan_files.util.visualizer import save_images
 from SOURCE.gan_files.util import html
 import streamlit as st
+import tempfile
 
 
-def clean():
+# def clean():
+#     opt = TestOptions().parse()  # get test options
+#     print(opt.dataroot)
+#     # hard-code some parameters for test
+#     opt.num_threads = 0   # test code only supports num_threads = 0
+#     opt.batch_size = 1    # test code only supports batch_size = 1
+#     opt.serial_batches = True  # disable data shuffling; comment this line if results on randomly chosen images are needed.
+#     opt.no_flip = True    # no flip; comment this line if results on flipped images are needed.
+#     opt.display_id = -1   # no visdom display; the test code saves the results to a HTML file.
+#     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
+#     model = create_model(opt)      # create a model given opt.model and other options
+#     model.setup(opt)               # regular setup: load and print networks; create schedulers
+#     # create a website
+#     web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
+#     if opt.load_iter > 0:  # load_iter is 0 by default
+#         web_dir = '{:s}_iter{:d}'.format(web_dir, opt.load_iter)
+#     print('creating web directory', web_dir)
+#     webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
+#     # test with eval mode. This only affects layers like batchnorm and dropout.
+#     # For [pix2pix]: we use batchnorm and dropout in the original pix2pix. You can experiment it with and without eval() mode.
+#     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
+#     if opt.eval:
+#         model.eval()
+#     for i, data in enumerate(dataset):
+#         if i >= opt.num_test:  # only apply our model to opt.num_test images.
+#             break
+#         model.set_input(data)  # unpack data from data loader
+#         model.test()           # run inference
+#         visuals = model.get_current_visuals()  # get image results
+#         img_path = model.get_image_paths()     # get image paths
+#         if i % 5 == 0:  # save images to an HTML file
+#             print('processing (%04d)-th image... %s' % (i, img_path))
+#         save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
+#     # webpage.save()  # save the HTML
+
+# def clean(input_image_path):
+#     opt = TestOptions().parse()  # get test options
+#     opt.dataroot = input_image_path  # dynamically set input image path
+#     opt.num_threads = 0
+#     opt.batch_size = 1
+#     opt.serial_batches = True
+#     opt.no_flip = True
+#     opt.display_id = -1
+
+#     dataset = create_dataset(opt)  # create dataset
+#     model = create_model(opt)      # create model
+#     model.setup(opt)               # setup model
+
+#     # Process dataset and retrieve results in-memory
+#     for i, data in enumerate(dataset):
+#         if i >= opt.num_test:
+#             break
+#         model.set_input(data)  # set input
+#         model.test()           # perform inference
+#         visuals = model.get_current_visuals()
+#         img_path = model.get_image_paths()
+
+#         # Save images in-memory
+#         in_memory_images = save_images(None, visuals, img_path, in_memory=True)
+#         return in_memory_images  # return in-memory results
+
+def clean(input_image_path):
+    """
+    Cleans the input image using the GAN model and returns in-memory processed images.
+
+    Args:
+        input_image_path (str): Path to the input image.
+
+    Returns:
+        list: List of BytesIO objects containing the processed images.
+    """
     opt = TestOptions().parse()  # get test options
-    print(opt.dataroot)
-    # hard-code some parameters for test
-    opt.num_threads = 0   # test code only supports num_threads = 0
-    opt.batch_size = 1    # test code only supports batch_size = 1
-    opt.serial_batches = True  # disable data shuffling; comment this line if results on randomly chosen images are needed.
-    opt.no_flip = True    # no flip; comment this line if results on flipped images are needed.
-    opt.display_id = -1   # no visdom display; the test code saves the results to a HTML file.
-    dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
-    model = create_model(opt)      # create a model given opt.model and other options
-    model.setup(opt)               # regular setup: load and print networks; create schedulers
-    # create a website
-    web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
-    if opt.load_iter > 0:  # load_iter is 0 by default
-        web_dir = '{:s}_iter{:d}'.format(web_dir, opt.load_iter)
-    print('creating web directory', web_dir)
-    webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
-    # test with eval mode. This only affects layers like batchnorm and dropout.
-    # For [pix2pix]: we use batchnorm and dropout in the original pix2pix. You can experiment it with and without eval() mode.
-    # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
-    if opt.eval:
-        model.eval()
+    opt.dataroot = input_image_path  # dynamically set input image path
+    opt.num_threads = 0
+    opt.batch_size = 1
+    opt.serial_batches = True
+    opt.no_flip = True
+    opt.display_id = -1
+    opt.results_dir = tempfile.mkdtemp()  # Use a temporary directory for results
+
+    dataset = create_dataset(opt)  # create dataset
+    model = create_model(opt)      # create model
+    model.setup(opt)               # setup model
+
+    processed_images = []
+
     for i, data in enumerate(dataset):
-        if i >= opt.num_test:  # only apply our model to opt.num_test images.
+        if i >= opt.num_test:
             break
-        model.set_input(data)  # unpack data from data loader
-        model.test()           # run inference
-        visuals = model.get_current_visuals()  # get image results
-        img_path = model.get_image_paths()     # get image paths
-        if i % 5 == 0:  # save images to an HTML file
-            print('processing (%04d)-th image... %s' % (i, img_path))
-        save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
-    # webpage.save()  # save the HTML
+        model.set_input(data)
+        model.test()
+        visuals = model.get_current_visuals()
+        img_path = model.get_image_paths()
+
+        web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
+        if opt.load_iter > 0:  # load_iter is 0 by default
+            web_dir = '{:s}_iter{:d}'.format(web_dir, opt.load_iter)
+        print('creating web directory', web_dir)
+        webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
+
+        # Save the output as in-memory images
+        in_memory_images = save_images(webpage, visuals, img_path, in_memory=False)
+        processed_images.extend(in_memory_images)
+
+    return processed_images

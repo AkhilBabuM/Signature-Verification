@@ -3,17 +3,19 @@ import cv2
 from PIL import Image
 
 
-def high_contrast_clean(image_path, output_size=(512, 512)):
-    '''
-    Extracts and cleans the signature from a grayscale image at image_path.
-    '''
-    # Load the image in grayscale
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+def high_contrast_clean(pil_image, output_size=(512, 512)):
+    """
+    Extracts and cleans the signature from a grayscale PIL.Image.
 
-    # Check if the image is loaded properly
-    if image is None:
-        print(f"Error loading image {image_path}")
-        return None
+    Args:
+        pil_image (PIL.Image): Input image in PIL format.
+        output_size (tuple): Desired output size as (width, height).
+
+    Returns:
+        PIL.Image: Cleaned and processed PIL.Image object.
+    """
+    # Convert the PIL.Image to a grayscale numpy array
+    image = np.array(pil_image.convert("L"))
 
     # Upscale the image using the provided upscale function if its width is below the threshold
     image = upscale_image(image, min_width=900)
@@ -39,7 +41,7 @@ def high_contrast_clean(image_path, output_size=(512, 512)):
     # Resize the binary image to the desired output size with black padding
     binary = make_square(binary, size=output_size[0])
 
-    # Convert the binary image to a PIL Image
+    # Convert the binary image back to a PIL.Image
     cleaned_image = Image.fromarray(binary)
 
     return cleaned_image

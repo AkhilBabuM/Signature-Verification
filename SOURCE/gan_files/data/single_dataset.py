@@ -1,13 +1,10 @@
 from SOURCE.gan_files.data.base_dataset import BaseDataset, get_transform
 from SOURCE.gan_files.data.image_folder import make_dataset
 from PIL import Image
-
+import os
 
 class SingleDataset(BaseDataset):
-    """This dataset class can load a set of images specified by the path --dataroot /path/to/data.
-
-    It can be used for generating CycleGAN results only for one side with the model option '-model test'.
-    """
+    """This dataset class can load a set of images specified by the path --dataroot /path/to/data or a single image file."""
 
     def __init__(self, opt):
         """Initialize this dataset class.
@@ -16,7 +13,16 @@ class SingleDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        self.A_paths = sorted(make_dataset(opt.dataroot, opt.max_dataset_size))
+
+        if os.path.isfile(opt.dataroot):
+            # If dataroot is a single file, use it directly
+            self.A_paths = [opt.dataroot]
+        elif os.path.isdir(opt.dataroot):
+            # If dataroot is a directory, load all images from the directory
+            self.A_paths = sorted(make_dataset(opt.dataroot, opt.max_dataset_size))
+        else:
+            raise ValueError(f"{opt.dataroot} is neither a valid file nor a directory.")
+
         input_nc = self.opt.output_nc if self.opt.direction == 'BtoA' else self.opt.input_nc
         self.transform = get_transform(opt, grayscale=(input_nc == 1))
 
