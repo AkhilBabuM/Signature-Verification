@@ -4,6 +4,10 @@ from SOURCE.gan_files.util import util
 import torch
 import SOURCE.gan_files.models as models
 import SOURCE.gan_files.data as data
+import logging
+logger = logging.getLogger(__name__)
+
+logger.propagate = True  # Allow propagation to root logger
 
 
 class BaseOptions():
@@ -102,7 +106,7 @@ class BaseOptions():
                 comment = '\t[default: %s]' % str(default)
             message += '{:>25}: {:<30}{}\n'.format(str(k), str(v), comment)
         message += '----------------- End -------------------'
-        print(message)
+        logger.debug(message)
 
         # save to the disk
         expr_dir = os.path.join(opt.checkpoints_dir, opt.name)
@@ -121,10 +125,10 @@ class BaseOptions():
 
         # Check if CUDA is available and set the device if possible
         if torch.cuda.is_available() and opt.gpu_ids and opt.gpu_ids[0] >= 0:
-            print(f"CUDA is available. Using GPU ID {opt.gpu_ids[0]}")
+            logger.debug(f"CUDA is available. Using GPU ID {opt.gpu_ids[0]}")
             torch.cuda.set_device(opt.gpu_ids[0])
         else:
-            print("CUDA is not available. Running on CPU.")
+            logger.debug("CUDA is not available. Running on CPU.")
 
         # # Finalize any other option parsing logic if necessary
         # self.process_parsed_options(opt)

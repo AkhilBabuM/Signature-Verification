@@ -113,11 +113,15 @@ class Ensemble(nn.ModuleList):
 def attempt_load(weights, map_location=None, inplace=True):
     from SOURCE.yolo_files.models.yolo import Detect, Model
 
+    # import warnings
+    # Suppress FutureWarning or specific warnings from torch
+    # warnings.filterwarnings("ignore", category=FutureWarning)
+
     # Loads an ensemble of models weights=[a,b,c] or a single model weights=[a] or weights=a
     model = Ensemble()
     for w in weights if isinstance(weights, list) else [weights]:
         attempt_download(w)
-        ckpt = torch.load(w, map_location=map_location)  # load
+        ckpt = torch.load(w, map_location=map_location, weights_only=False)  # load
         model.append(ckpt['ema' if ckpt.get('ema') else 'model'].float().fuse().eval())  # FP32 model
 
     # Compatibility updates

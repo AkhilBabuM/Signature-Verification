@@ -133,7 +133,6 @@ def clean(input_image_path):
         web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
         if opt.load_iter > 0:  # load_iter is 0 by default
             web_dir = '{:s}_iter{:d}'.format(web_dir, opt.load_iter)
-        print('creating web directory', web_dir)
         webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
 
         # Save the output as in-memory images

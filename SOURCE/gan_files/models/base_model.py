@@ -3,6 +3,10 @@ import torch
 from collections import OrderedDict
 from abc import ABC, abstractmethod
 from SOURCE.gan_files.models import networks
+import logging
+logger = logging.getLogger(__name__)
+
+logger.propagate = True  # Allow propagation to root logger
 
 
 class BaseModel(ABC):
@@ -124,7 +128,7 @@ class BaseModel(ABC):
                 scheduler.step()
 
         lr = self.optimizers[0].param_groups[0]['lr']
-        print('learning rate %.7f -> %.7f' % (old_lr, lr))
+        logger.debug('learning rate %.7f -> %.7f' % (old_lr, lr))
 
     def get_current_visuals(self):
         """Return visualization images. train.py will display these images with visdom, and save the images to a HTML"""
@@ -187,7 +191,7 @@ class BaseModel(ABC):
                 net = getattr(self, 'net' + name)
                 if isinstance(net, torch.nn.DataParallel):
                     net = net.module
-                print('loading the model from %s' % load_path)
+                logger.debug('loading the model from %s' % load_path)
                 
                 # Map to CPU if CUDA is not available
                 map_location = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -209,7 +213,7 @@ class BaseModel(ABC):
         Parameters:
             verbose (bool) -- if verbose: print the network architecture
         """
-        print('---------- Networks initialized -------------')
+        logger.debug('---------- Networks initialized -------------')
         for name in self.model_names:
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
@@ -217,9 +221,9 @@ class BaseModel(ABC):
                 for param in net.parameters():
                     num_params += param.numel()
                 if verbose:
-                    print(net)
-                print('[Network %s] Total number of parameters : %.3f M' % (name, num_params / 1e6))
-        print('-----------------------------------------------')
+                    logger.debug(net)
+                logger.debug('[Network %s] Total number of parameters : %.3f M' % (name, num_params / 1e6))
+        logger.debug('-----------------------------------------------')
 
     def set_requires_grad(self, nets, requires_grad=False):
         """Set requies_grad=Fasle for all the networks to avoid unnecessary computations

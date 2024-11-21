@@ -36,6 +36,9 @@ def set_logging(rank=-1, verbose=True):
     logging.basicConfig(
         format="%(message)s",
         level=logging.INFO if (verbose and rank in [-1, 0]) else logging.WARN)
+    logger = logging.getLogger(__name__)
+    
+    logger.propagate = True  # Allow propagation to root logger
 
 
 def init_seeds(seed=0):

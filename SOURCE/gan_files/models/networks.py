@@ -3,6 +3,10 @@ import torch.nn as nn
 from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
+import logging
+logger = logging.getLogger(__name__)
+
+logger.propagate = True  # Allow propagation to root logger
 
 
 ###############################################################################
@@ -94,7 +98,7 @@ def init_weights(net, init_type='normal', init_gain=0.02):
             init.normal_(m.weight.data, 1.0, init_gain)
             init.constant_(m.bias.data, 0.0)
 
-    print('initialize network with %s' % init_type)
+    logger.debug('initialize network with %s' % init_type)
     net.apply(init_func)  # apply the initialization function <init_func>
 
 
@@ -112,7 +116,7 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
         net.to(gpu_ids[0])
         net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs
     else:
-        print("CUDA is not available. Using CPU.")
+        logger.debug("CUDA is not available. Using CPU.")
         net.to('cpu')  # Move the network to CPU
 
     init_weights(net, init_type, init_gain=init_gain)

@@ -8,6 +8,21 @@ from SOURCE.gan_files import test
 from helper_fns import gan_utils, cv_utils
 from typing import Union
 
+import warnings
+warnings.filterwarnings("ignore")
+
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logging.getLogger().setLevel(logging.INFO)
+
 OUTPUT_DIR = "/Users/akhilbabu/Documents/work/Signature-Verification/output"
 
 
@@ -34,7 +49,6 @@ def main(document_image_path: str) -> None:
     signature_cropped_image_buffer = detected_images[0]
 
     # Step 2: Clean the detected signature
-    print("About to call clean_signature")
     cleaned_image = clean_signature(signature_cropped_image_buffer)
     if not cleaned_image:
         print("Signature cleaning failed.")
