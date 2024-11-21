@@ -5,3 +5,4 @@ results
 *.pth
 *.pt
 .DS_Store
+.*venv

@@ -1,9 +1,9 @@
-name: signature-verification
+name: signature-verification-2
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - python=3.10.14
   - pip
   - asttokens
   - colorama
